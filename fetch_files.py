@@ -104,6 +104,7 @@ def main():
 
             ftp.retrbinary('RETR ' + p, lambda chunk: callback(chunk))
         bar.finish()
+        filecount += 1
         print '\n'
 
     ftp.quit()
