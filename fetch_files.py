@@ -70,12 +70,23 @@ def main():
     if not os.path.exists('./data'):
         os.makedirs('./data')
     
+    downloaded = []
+    try:
+        downloaded_files = open('downloaded.txt', 'r+')
+        downloaded = downloaded_files.read().splitlines()
+    except IOError:
+        downloaded_files = open('downloaded.txt', 'w')
+
     print "Now it's time to download the files. This may take a while..."
     ftp.cwd('../../..')
     filecount = 1
     filetotal = len(path_list)
     for p in path_list:
         filename = p.split('/')[-1]
+        if p in downloaded:
+            filecount += 1
+            print 'Already downloaded',filename,'\n'
+            continue
         print "Downloading ("+str(filecount)+"/"+str(filetotal)+") " + filename
         ftp.sendcmd("TYPE i")
         filesize = ftp.size(p)
@@ -104,12 +115,11 @@ def main():
 
             ftp.retrbinary('RETR ' + p, lambda chunk: callback(chunk))
         bar.finish()
+        downloaded_files.write(p+'\n')
         filecount += 1
         print '\n'
-
+    downloaded_files.close()
     ftp.quit()
-
-
 
 if __name__ == '__main__':
     main()
