@@ -1,7 +1,6 @@
 import glob
 import re
 import numpy as np
-from sklearn.linear_model import PassiveAggressiveClassifier
 
 def getMods(comment):
     elems = comment.split(" ")
@@ -72,13 +71,12 @@ def fileIterator(filename):
 
 def main():
     count = 0
-    clf = PassiveAggressiveClassifier(n_jobs=4)
     check_data = []
     check_target = []
     print 'Reading data...'
     file_list = glob.glob('./data/*.msp')
     for f in file_list:
-        if count > 5:
+        if count > 1:
             continue
         count += 1
         learn_data = []
@@ -96,69 +94,15 @@ def main():
             mods = getMods(thing['comment'])
             for i in range(0, len(thing['peak_list'])):
                 peak = thing['peak_list'][i]
-                peak_def = peak[2].split("^")[0]
-                try:
-                    peak_loss = peak_def.split("-")[1]
-                except IndexError:
-                    peak_loss = "0"
-                try:
-                    peak_gain = peak_def.split("+")[1]
-                except IndexError:
-                    peak_gain = "0"
-                peak_type = peak_def.split("-")[0]
-                peak_type = peak_type.split("+")[0]
-                peak_type = peak_type.replace("i", "").replace("*", "")
-                if peak_type.startswith("y"):
-                    index = len(clean_seq) - int(peak_type[1:])
-                elif peak_type != "?":
-                    index = int(peak_type[1:]) - 1
-                else:
-                    index = -1
-                if peak_type != "?":
-                    #label = clean_seq[index]
-                    label = peak_type[0]
-                    label = "p"
-                else:
-                    label = "?"
-                #for m in mods:
-                #    if int(m[0]) == index:
-                #        label += "("+m[1]+")"
-                before_values = []
-                after_values = []
-                for j in range(i, i-20):
-                    if j<0:
-                        mass_diff = 0
-                        intensity = 0
-                    else:
-                        mass_diff = thing['peak_list'][j][0] - peak[0]
-                        intensity = thing['peak_list'][j][1] / 10000
-                    before_values.append(mass_diff)
-                    before_values.append(intensity)
-                
-                for j in range(i, i+20):
-                    if j>=len(thing['peak_list']):
-                        mass_diff = 0
-                        intensity = 0
-                    else:
-                        mass_diff = thing['peak_list'][j][0] - peak[0]
-                        intensity = thing['peak_list'][j][1] / 10000
-                    after_values.append(mass_diff)
-                    after_values.append(intensity)
-                
-                input = [peak[1]/10000] + before_values + after_values
-                learn_data.append(input)
-                target.append(label)
-                if processed % 1000 == 0:
-                    check_data.append(input)
-                    check_target.append(label)
+                peak_class = peak[2].split("/")[0]
+                if "-" in peak_class or "^" in peak_class or "i" in peak_class or "?" in peak_class:
+                    continue
+                peak_type = peak_class[0]
+                peak_position = peak_class[1:]
+                print peak_type,peak_position
+
+
             
-            classes = ['?', 'p']
-            if processed % 10000 == 0:
-                print 'Classifying...'
-                clf.partial_fit(learn_data, target, classes)
-                print 'Score:',clf.score(check_data, check_target)
-                learn_data = []
-                target = []
 
 if __name__ == '__main__':
     main()
