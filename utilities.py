@@ -71,7 +71,7 @@ def filter_noise(spectrum):
     log_intensity = np.log10(intensity)
     mean_log_intensity = np.mean(log_intensity)
     std_log_intensity = np.std(log_intensity)
-    cutoff = 1.5
+    cutoff = 2
     upper_bound = mean_log_intensity + cutoff * std_log_intensity
 
     filtered_mz = []
@@ -83,3 +83,25 @@ def filter_noise(spectrum):
             filtered_intensity.append(i)
 
     return filtered_mz, filtered_intensity
+
+# filter_paths makes sure that at least one of the mass
+# differences in a path corresponds to an expected mass
+# from our amino acid dict
+def filter_paths(paths, mz, AA):
+    filtered_paths = []
+    valid_values = AA.values()
+    for path in paths:
+        matches = False
+        for i in range(1,len(path)):
+            mass_1_idx = path[i-1]
+            mass_2_idx = path[i]
+            mass_1 = mz[mass_1_idx]
+            mass_2 = mz[mass_2_idx]
+            mass_diff = mass_2 - mass_1
+            closest_idx = find_nearest(valid_values, mass_diff)
+            error = abs(valid_values[closest_idx] - mass_diff)
+            if error < 0.5:
+                matches = True
+        if matches == True:
+            filtered_paths.append(path)
+    return filtered_paths

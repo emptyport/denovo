@@ -1,134 +1,57 @@
+# Some code copied from http://www.geeksforgeeks.org/find-paths-given-source-destination/
+
 import utilities as util
 import copy
-
-class MassConnection():
-
-    def __init__(self, low, high, diff, match):
-        self.low = low
-        self.high = high
-        self.diff = diff
-        self.match = match
-
-    def __repr__(self):
-        return '%s %s %s %s' % (self.low, self.high, self.diff, self.match)
-
-class MassPath():
-
-    def __init__(self, elems=[], match=False):
-        self.elems = elems
-        self.match = match
-
-    def add(self,elem):
-        self.elems.append(elem)
-        if elem.match is True:
-            self.match = True
-
-    def push(self, elem):
-        self.elems.insert(0,elem)
-        if elem.match is True:
-            self.match=True
-
-    def display(self):
-        print self.elems
+from collections import defaultdict
 
 class MassGraph():
 
     def __init__(self, **kwargs):
-        self.edges = 0
-        self.connections = []
-        self.upper_paths = []
-        self.lower_paths = []
-        self.paths = []
 
         self.mz = kwargs['mz']
         self.minMass = kwargs['minMass'] if 'minMass' in kwargs else 50
         self.maxMass = kwargs['maxMass'] if 'maxMass' in kwargs else 200
         self.massTolerance = kwargs['massTolerance'] if 'massTolerance' in kwargs else 0.5
+        self.maxLen = kwargs['maxLen'] if 'maxLen' in kwargs else 30
         self.aa = kwargs['aa']
 
+        self.V = len(self.mz)
+        self.graph = defaultdict(list)
+        self.paths = []
+
         self.create_connections()
+
+    def add_edge(self, u, v):
+        self.graph[u].append(v)
 
     def create_connections(self):
         for i in range(0, len(self.mz)-1):
             for j in range(i+1, len(self.mz)):
                 mass_diff = self.mz[j] - self.mz[i]
                 if mass_diff >= self.minMass and mass_diff <= self.maxMass:
-                    self.edges += 1
-                    closest_aa_mass_idx = util.find_nearest(self.aa.values(), mass_diff)
-                    match = False
-                    if abs(self.aa.values()[closest_aa_mass_idx] - mass_diff) <= self.massTolerance:
-                        match = True
-                    self.connections.append(MassConnection(self.mz[i], self.mz[j], mass_diff, match))
+                    self.add_edge(i, j)
+                    
+    def get_all_paths(self, s, d):
+        self.paths = []
+        visited = [False] * (self.V)
+        path = []
+        self.calc_all_paths(s, d, visited, path)
+        return self.paths
 
-    def find_paths(self):
-        print 'Finding paths...'
-        count = 0
-        for connection in self.connections:
-            #if connection.match == False:
-            #    continue
-            count += 1
-            #self.pathfinder_upper(connection)
-            #self.pathfinder_lower(connection)
-            print connection
-            paths = self.extend_path(connection)
-            print paths
-            #lower_connections = self.pathfinder_lower()
-
-        #self.upper_paths[0].display()
-        #self.upper_paths[1].display()
-
-        #self.lower_paths[0].display()
-        #self.lower_paths[-1].display()
-        print len(self.paths)
-        self.paths[-1].display()
-        #print len(self.connections)
-        print count
-
-    def pathfinder_upper(self, connection, mass_path=None):
-        if mass_path == None:
-            mass_path = MassPath()
-            print 'Adding', connection
-            mass_path.add(connection)
-
-        for con in self.connections:
-            if con.low == connection.high:
-                mass_path.add(con)
-                self.upper_paths.append(copy.deepcopy(mass_path))
-                self.pathfinder_upper(con, mass_path)
-                return
-        return   
-
-    def pathfinder_lower(self, connection, mass_path=None):
-        if mass_path == None:
-            mass_path = MassPath()
-            print 'Adding', connection
-            mass_path.add(connection)
-
-        for con in self.connections:
-            if con.high == connection.low:
-                mass_path.push(con)
-                self.lower_paths.append(copy.deepcopy(mass_path))
-                self.pathfinder_lower(con, mass_path)
-                return
-        return
-
-    def pathfinder(self, connection):
-        return None
-
-    def extend_path(self, connection):
+    def calc_all_paths(self, u, d, visited, path):
+        visited[u] = True
+        path.append(u)
         
-        children = self.get_children(connection)
-        #print children
-        if children == []:
-            return connection
-        for child in children:
-            self.extend_path(child)
+        if u == d:
+            self.paths.append(copy.copy(path))
+        else:
+            for i in self.graph[u]:
+                if visited[i] == False:
+                    if i <= d:
+                        if len(path) <= self.maxLen:
+                            self.calc_all_paths(i, d, visited, path)
 
-    def get_children(self, connection):
-        children = []
-        for con in self.connections:
-            if con.low == connection.high:
-                children.append(con)
-        return children
+        path.pop()
+        visited[u] = False
 
     
